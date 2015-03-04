@@ -162,8 +162,8 @@ class IsoTimestampParser extends StringValueParser {
 
 		$rightZeros = strlen( $year ) - strlen( rtrim( $year, '0' ) );
 		$precision = TimeValue::PRECISION_YEAR - $rightZeros;
-		if ( $precision < TimeValue::PRECISION_Ga ) {
-			$precision = TimeValue::PRECISION_Ga;
+		if ( $precision < TimeValue::PRECISION_YEAR1G ) {
+			$precision = TimeValue::PRECISION_YEAR1G;
 		}
 
 		return $precision;

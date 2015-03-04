@@ -52,6 +52,11 @@ DataValues Time has been written by the Wikidata team, as [Wikimedia Germany]
 
 ## Release notes
 
+### 0.8.0 (dev)
+
+#### Breaking changes
+* Renamed all `TimeValue::PRECISION_...` constants with lower case letters, e.g. `PRECISION_10a` to `PRECISION_YEAR10`
+
 ### 0.7.0 (2015-04-20)
 
 #### Breaking changes
