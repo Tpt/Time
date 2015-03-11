@@ -5,6 +5,7 @@ namespace ValueFormatters\Test;
 use DataValues\TimeValue;
 use ValueFormatters\FormatterOptions;
 use ValueFormatters\TimeFormatter;
+use ValueFormatters\ValueFormatter;
 
 /**
  * @covers ValueFormatters\TimeFormatter
@@ -14,6 +15,7 @@ use ValueFormatters\TimeFormatter;
  *
  * @licence GNU GPL v2+
  * @author H. Snater < mediawiki@snater.com >
+ * @author Thiemo Mättig
  */
 class TimeFormatterTest extends ValueFormatterTestBase {
 
@@ -36,84 +38,135 @@ class TimeFormatterTest extends ValueFormatterTestBase {
 	}
 
 	/**
+	 * @return ValueFormatter
+	 */
+	private function getTimestampFormatter() {
+		$mock = $this->getMockBuilder( 'ValueFormatters\ValueFormatter' )
+			->disableOriginalConstructor()
+			->getMock();
+
+		$mock->expects( $this->any() )
+			->method( 'format' )
+			->will( $this->returnValue( '<timestamp>' ) );
+
+		return $mock;
+	}
+
+	/**
 	 * @see ValueFormatterTestBase::validProvider
 	 */
 	public function validProvider() {
+		$baseOptions = new FormatterOptions();
+		$baseOptions->setOption( TimeFormatter::OPT_CALENDARNAMES, array(
+			'http://www.wikidata.org/entity/Q1985727' => '<Gregorian>',
+			'http://www.wikidata.org/entity/Q1985786' => '<Julian>',
+		) );
+
+		$timestampFormatterOptions = clone $baseOptions;
+		$timestampFormatterOptions->setOption(
+			TimeFormatter::OPT_TIME_ISO_FORMATTER,
+			$this->getTimestampFormatter()
+		);
+
 		$tests = array(
-			'+2013-07-16T00:00:00Z' => array(
-				'+00000002013-07-16T00:00:00Z',
-				0,
-				0,
-				0,
-				11,
-				TimeFormatter::CALENDAR_GREGORIAN
+			'2013-07-16' => array(
+				'+2013-07-16T00:00:00Z',
 			),
-			'+0000-01-01T00:00:00Z' => array(
-				'+00000000000-01-01T00:00:00Z',
-				0,
-				0,
-				0,
-				11,
-				TimeFormatter::CALENDAR_GREGORIAN
+
+			// Custom timestamp formatter
+			'<timestamp>' => array(
+				'+2013-07-16T00:00:00Z',
+				TimeValue::PRECISION_DAY,
+				'http://www.wikidata.org/entity/Q1985727',
+				$timestampFormatterOptions,
 			),
-			'+0001-01-14T00:00:00Z' => array(
-				'+00000000001-01-14T00:00:00Z',
-				0,
-				0,
-				0,
-				11,
-				TimeFormatter::CALENDAR_JULIAN
+
+			// Different calendar models
+			'1701-12-14' => array(
+				'+1701-12-14T00:00:00Z',
+				TimeValue::PRECISION_DAY,
+				'http://www.wikidata.org/entity/Q1985786',
 			),
-			'+10000-01-01T00:00:00Z' => array(
-				'+00000010000-01-01T00:00:00Z',
-				0,
-				0,
-				0,
-				11,
-				TimeFormatter::CALENDAR_GREGORIAN
+			'1702-12-14' => array(
+				'+1702-12-14T00:00:00Z',
+				TimeValue::PRECISION_DAY,
+				'Stardate',
 			),
-			'-0001-01-01T00:00:00Z' => array(
-				'-00000000001-01-01T00:00:00Z',
-				0,
-				0,
-				0,
-				11,
-				TimeFormatter::CALENDAR_GREGORIAN
+
+			// Different years
+			"\xE2\x88\x9210000-01-01" => array(
+				'-010000-01-01T00:00:00Z',
 			),
-			'+2013-07-17T00:00:00Z' => array(
-				'+00000002013-07-17T00:00:00Z',
-				0,
-				0,
-				0,
-				10,
-				TimeFormatter::CALENDAR_GREGORIAN
+			"\xE2\x88\x920001-01-01" => array(
+				'-1-01-01T00:00:00Z',
 			),
-			'+2013-07-18T00:00:00Z' => array(
-				'+00000002013-07-18T00:00:00Z',
-				0,
-				0,
-				0,
-				9,
-				TimeFormatter::CALENDAR_GREGORIAN
+			"\xE2\x88\x920100-01-01" => array(
+				'-100-01-01T00:00:00Z',
 			),
-			'+2013-07-19T00:00:00Z' => array(
-				'+00000002013-07-19T00:00:00Z',
-				0,
-				0,
-				0,
-				8,
-				TimeFormatter::CALENDAR_GREGORIAN
+			"\xE2\x88\x920000-01-01" => array(
+				'-0-01-01T00:00:00Z',
+			),
+			'0000-01-01' => array(
+				'+0-01-01T00:00:00Z',
+			),
+			'0001-01-01' => array(
+				'+1-01-01T00:00:00Z',
+			),
+			'0100-01-01' => array(
+				'+100-01-01T00:00:00Z',
+			),
+			'10000-01-01' => array(
+				'+010000-01-01T00:00:00Z',
+			),
+
+			// Different precisions
+			'2000' => array(
+				'+2000-01-01T00:00:00Z',
+				TimeValue::PRECISION_Ga,
+			),
+			'2008' => array(
+				'+2008-01-08T00:00:00Z',
+				TimeValue::PRECISION_10a,
+			),
+			'2009' => array(
+				'+2009-01-09T00:00:00Z',
+				TimeValue::PRECISION_YEAR,
+			),
+			'2010-07' => array(
+				'+2010-07-10T00:00:00Z',
+				TimeValue::PRECISION_MONTH,
+			),
+			'2011-07-11' => array(
+				'+2011-07-11T00:00:00Z',
+				TimeValue::PRECISION_DAY,
+			),
+			'2012-07-12T00' => array(
+				'+2012-07-12T00:00:00Z',
+				TimeValue::PRECISION_HOUR,
+			),
+			'2013-07-13T00:00' => array(
+				'+2013-07-13T00:00:00Z',
+				TimeValue::PRECISION_MINUTE,
+			),
+			'2014-07-14T00:00:00' => array(
+				'+2014-07-14T00:00:00Z',
+				TimeValue::PRECISION_SECOND,
 			),
 		);
 
 		$argLists = array();
 
-		// TODO: Test with different parser options.
-		$options = new FormatterOptions();
-
 		foreach ( $tests as $expected => $args ) {
-			$timeValue = new TimeValue( $args[0], $args[1], $args[2], $args[3], $args[4], $args[5] );
-			$argLists[] = array( $timeValue, $expected, $options );
+			$timestamp = $args[0];
+			$precision = isset( $args[1] ) ? $args[1] : TimeValue::PRECISION_DAY;
+			$calendarModel = isset( $args[2] ) ? $args[2] : 'http://www.wikidata.org/entity/Q1985727';
+			$options = isset( $args[3] ) ? $args[3] : $baseOptions;
+
+			$argLists[] = array(
+				new TimeValue( $timestamp, 0, 0, 0, $precision, $calendarModel ),
+				$expected,
+				$options
+			);
 		}
 
 		return $argLists;
